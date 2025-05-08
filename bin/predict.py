@@ -8,7 +8,7 @@ import string
 
 import numpy as np
 import pandas as pd
-
+import tensorflow as tf
 from fetch.data_sequence import DataGenerator
 from fetch.utils import get_model
 
@@ -40,10 +40,17 @@ if __name__ == "__main__":
         action='append'
     )
     parser.add_argument(
+        "-o",
+        "--out_dir",
+        help="Directory to save the results.",
+        required=False,
+        type=str
+    )
+    parser.add_argument(
         "-b", "--batch_size", help="Batch size for training data", default=8, type=int
     )
     parser.add_argument(
-        "-m", "--model", help="Index of the model to train", required=True
+        "-m", "--model", help="Path to the model file (.keras or original)", required=True
     )
     parser.add_argument(
         "-p", "--probability", help="Detection threshold", default=0.5, type=float
@@ -59,9 +66,6 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO, format=logging_format)
 
-    if args.model not in list(string.ascii_lowercase)[:11]:
-        raise ValueError(f"Model only range from a -- j.")
-
     if args.gpu_id >= 0:
         os.environ["CUDA_VISIBLE_DEVICES"] = f"{args.gpu_id}"
     else:
@@ -73,11 +77,11 @@ if __name__ == "__main__":
     else:
         use_multiprocessing = False
 
-    if args.model not in list(string.ascii_lowercase)[:11]:
-        raise ValueError(f"Model only range from a -- j.")
+    if args.model.endswith(".keras"):
+        model = tf.keras.models.load_model(args.model)
+    else:
+        model = get_model(args.model)
 
-    model = get_model(args.model)
-    
     for data_dir in args.data_dir:
 
         cands_to_eval = glob.glob(f"{data_dir}/*h5")
@@ -98,8 +102,8 @@ if __name__ == "__main__":
         )
 
         # get's get predicting
-        probs = model.predict_generator(
-            generator=cand_datagen,
+        probs = model.predict(
+            x=cand_datagen,
             verbose=1,
             use_multiprocessing=use_multiprocessing,
             workers=args.nproc,
@@ -107,10 +111,10 @@ if __name__ == "__main__":
         )
 
         # Save results
+        output_dir = args.out_dir if args.out_dir else data_dir
         results_dict = {}
         results_dict["candidate"] = cands_to_eval
         results_dict["probability"] = probs[:, 1]
         results_dict["label"] = np.round(probs[:, 1] >= args.probability)
-        results_file = data_dir + f"/results_{args.model}.csv"
+        results_file = os.path.join(output_dir,f"results_{os.path.basename(args.model).replace('.keras', '').replace('.h5', '')}.csv")
         pd.DataFrame(results_dict).to_csv(results_file)
-    

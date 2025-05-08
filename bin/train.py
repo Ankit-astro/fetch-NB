@@ -9,6 +9,7 @@ import pandas as pd
 from tensorflow.keras.callbacks import EarlyStopping, CSVLogger, ModelCheckpoint
 from tensorflow.keras.models import Model
 from sklearn.model_selection import train_test_split
+from tensorflow.keras.callbacks import TensorBoard
 
 from fetch.data_sequence import DataGenerator
 from fetch.utils import get_model
@@ -18,32 +19,12 @@ logger = logging.getLogger(__name__)
 
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
-
 def train(model, epochs, patience, output_path, nproc, train_obj, val_obj):
-    """
-
-    :param model: model to train (must be compiled)
-    :type model: Model
-    :param epochs: max number of epochs to train.
-    :type epochs: int
-    :param patience: Stop after these many layers if val. loss doesn't decrease
-    :type patience: int
-    :param output_path: paths to save weights and logs
-    :type output_path: str
-    :param nproc: number of processors for training
-    :type nproc: int
-    :param train_obj: DataGenerator training object for training
-    :type train_obj: DataGenerator
-    :param val_obj: DataGenerator training object for validation
-    :type val_obj: DataGenerator
-    :return: model, history object
-    """
     if nproc == 1:
         use_multiprocessing = False
     else:
         use_multiprocessing = True
 
-    # Callbacks for training and validation
     ES = EarlyStopping(
         monitor="val_loss",
         min_delta=1e-3,
@@ -57,7 +38,7 @@ def train(model, epochs, patience, output_path, nproc, train_obj, val_obj):
         monitor="val_loss",
         verbose=1,
         save_best_only=True,
-        save_weights_only=False,
+        save_weights_only=False,  # Save entire model
         mode="min",
     )
     csv_name = output_path + "training_log.csv"
@@ -65,10 +46,12 @@ def train(model, epochs, patience, output_path, nproc, train_obj, val_obj):
 
     callbacks = [ES, CK, LO]
 
-    train_history = model.fit_generator(
-        generator=train_obj,
+    train_history = model.fit(
+        x=train_obj,
         validation_data=val_obj,
         epochs=epochs,
+        steps_per_epoch=len(train_obj), 
+        validation_steps=len(val_obj),
         use_multiprocessing=use_multiprocessing,
         max_queue_size=10,
         workers=nproc,
@@ -76,8 +59,10 @@ def train(model, epochs, patience, output_path, nproc, train_obj, val_obj):
         callbacks=callbacks,
         verbose=1,
     )
-    return model, train_history
 
+    # Save the full model as a .keras file
+    model.save(output_path + "trained_model.keras")
+    return model, train_history
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

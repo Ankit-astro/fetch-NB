@@ -27,9 +27,21 @@ Trained models can be downloaded from [Hugging Face](https://huggingface.co/Anki
 In our testing model_Z performed batter then the other two in RFI detection. 
 ---
 
+## Installation 
+
+```bash 
+git clone https://github.com/Ankit-astro/fetch-NB.git
+cd fetch-NB
+pip install -r requirements.txt
+python setup.py install
+```
+
 ## ⚙️ Usage
 Same as FETCH, But now trained for classifying Narrowband bursts also more effectively .
 To use the new trained model provide the path of the new model in the --model flag
 
 ```bash
 predict.py --data_dir /data/candidates/ --model /path/to/trained/model.keras
+```
+
+

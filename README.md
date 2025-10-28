@@ -29,6 +29,7 @@ In our testing model_Z performed batter then the other two in RFI detection.
 
 ## ⚙️ Usage
 Same as FETCH, But now trained for classifying Narrowband bursts also more effectively .
+To use the new trained model provide the path of the new model in the --model flag
 
 ```bash
 predict.py --data_dir /data/candidates/ --model /path/to/trained/model.keras

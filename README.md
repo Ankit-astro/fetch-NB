@@ -10,7 +10,7 @@ It was developed as part of my **MSc project** at the Central University of Hary
 - Added support for **narrowband FRB search**.
 - Integrated **custom feature extraction** for narrowband pulse profiles.
 - Trained models for better classification of narrowband pulses in data.
-- 
+
 
 ---
 
